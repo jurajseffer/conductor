@@ -78,7 +78,7 @@ class LockFixerCommand extends BaseCommand
     private function fixShasum($lockFile)
     {
         $fileContents = file_get_contents($lockFile);
-        $replacedContents = preg_replace('/(\"shasum\"\:\ \".+\")$/', '"shasum": ""', $fileContents);
+        $replacedContents = preg_replace('/(\"shasum\"\:\ \".+\")/', '"shasum": ""', $fileContents);
         file_put_contents($lockFile, $replacedContents);
     }
 }
