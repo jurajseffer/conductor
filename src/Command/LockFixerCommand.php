@@ -30,6 +30,8 @@ class LockFixerCommand extends BaseCommand
             if ($this->fixLockFileRealPathsWithRelativePaths($fileSystem, $lockFile, $conductorRealPaths, $relativePaths)) {
                 $output->writeln('<info>Fixed lock file</info> "' . $lockFile . '"');
             }
+
+            $this->fixShasum($lockFile);
         }
     }
 
@@ -71,5 +73,12 @@ class LockFixerCommand extends BaseCommand
         $fileSystem->dumpFile($lockFile, $fixedContent);
 
         return true;
+    }
+
+    private function fixShasum($lockFile)
+    {
+        $fileContents = file_get_contents($lockFile);
+        $replacedContents = preg_replace('/(\"shasum\"\:\ \".+\")$/', '"shasum": ""', $fileContents);
+        file_put_contents($lockFile, $replacedContents);
     }
 }
