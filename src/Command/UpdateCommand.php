@@ -40,8 +40,9 @@ class UpdateCommand extends BaseCommand
     private function ensureRepositoryDirExists($path)
     {
         $fileSystem = new Filesystem();
-        if (false === $fileSystem->exists($path)) {
-            $fileSystem->mkdir($path);
+        if ($fileSystem->exists($path)) {
+            $fileSystem->remove($path);
         }
+        $fileSystem->mkdir($path);
     }
 }
