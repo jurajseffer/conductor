@@ -25,7 +25,18 @@ class Conductor
         $finder = new Finder();
         $finder->files()->exclude('vendor')->name('composer.json')->depth(0);
 
+        // @TODO: Check whether Composer's cache is enabled before enforcing this
+        if (empty($_SERVER['HOME'])) {
+            throw new \RuntimeException(
+                "Unable to determine current user's home directory from " . '$_SERVER["HOME"]'
+            );
+        }
+        // @TODO: Check for custom Composer cache folder
+        $baseCachePath = $_SERVER['HOME'] . '/.composer/cache/files/';
+        $displayCacheFixInstruction = false;
+
         $results = array();
+
         foreach ($finder->in($paths) as $file) {
             if ($this->output && OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
                 $this->output->writeln('<info>Package file:</info> ' . $file);
@@ -34,11 +45,10 @@ class Conductor
 
             // remove composer cache for custom artifact packages
             // Composer would pick cached ones instead of artifact folder
-            if (!empty($_SERVER['HOME']) && $this->fileSystem->exists($_SERVER['HOME'])) {
+            if ($this->fileSystem->exists($baseCachePath)) {
                 $packageDefinition = json_decode(file_get_contents($file));
                 $path = explode("/", $packageDefinition->name);
 
-                $baseCachePath = $_SERVER['HOME'] . '/.composer/cache/files/';
                 $vendorPath = $baseCachePath . $path[0];
                 if ($this->fileSystem->exists($vendorPath)) {
                     if ($this->output && OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
@@ -54,14 +64,25 @@ class Conductor
                                 $this->output->writeln("<info>Removed '$folder' directory</info>");
                             }
                         } catch (\Exception $e) {
-                            $this->output->writeln("<error>Failed to remove '{$vendorPath}/{$folder}'"
-                                . " directory from Composer cache. You may be getting an outdated artifact package</error>");
+                            $this->output->writeln("<error>" . $e->getMessage()
+                                . " You may be getting an outdated artifact package</error>");
+                            $displayCacheFixInstruction = true;
                         }
                     }
                 }
             }
 
             $results[] = $zip;
+        }
+
+        if ($displayCacheFixInstruction) {
+            $userMessage = "";
+            if (!empty($_SERVER["USER"])) {
+                $userMessage = " (sudo chown -R " . $_SERVER["USER"] . " " . $baseCachePath . ")";
+            }
+            $this->output->writeln("<bg=red;fg=white;option=blink>Failed to remove some cache files!"
+                . "</bg=red;fg=white;option=blink><error> Make sure the Composer cache directory is writable"
+                . " by the current user{$userMessage}.</error>");
         }
 
         return $results;
