@@ -43,6 +43,8 @@ abstract class BaseCommand extends Command
             $output->writeln('<info>Using configuration:</info> ' . $this->configurationFile);
             $output->writeln('<info>Changed working dir:</info> ' . $this->workingDir);
         }
+
+        $this->conductor->setOutput($output);
     }
 
     /**
